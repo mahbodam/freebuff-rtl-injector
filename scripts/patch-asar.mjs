@@ -20,7 +20,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, rmSync, readdirSync } from 'node:fs'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -116,7 +116,7 @@ function userDataDir() {
 }
 
 function findAsar() {
-  const argPath = process.argv[2]
+  const argPath = process.argv.slice(2).find((a) => !a.startsWith('--'))
   if (argPath) {
     if (!existsSync(argPath)) {
       console.error(`Given path does not exist: ${argPath}`)
@@ -135,6 +135,104 @@ function findAsar() {
     process.exit(1)
   }
   return found[0]
+}
+
+function candidateExecutablePaths() {
+  // The actual launchable binary next to each asar candidate — same
+  // directory structure, just resources/app.asar -> ../<exe>.
+  const home = os.homedir()
+  const plat = process.platform
+  const candidates = []
+
+  if (plat === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local')
+    const roots = [
+      path.join(localAppData, 'Programs', '@codebufffreebuff-desktop'),
+      path.join(localAppData, 'Programs', 'Freebuff'),
+    ]
+    try {
+      const programsDir = path.join(localAppData, 'Programs')
+      if (existsSync(programsDir)) {
+        for (const entry of readdirSync(programsDir)) {
+          if (entry.toLowerCase().includes('freebuff')) roots.push(path.join(programsDir, entry))
+        }
+      }
+    } catch {
+      /* best-effort */
+    }
+    for (const root of roots) {
+      if (!existsSync(root)) continue
+      try {
+        for (const entry of readdirSync(root)) {
+          if (entry.toLowerCase().endsWith('.exe') && !entry.toLowerCase().includes('uninstall')) {
+            candidates.push(path.join(root, entry))
+          }
+        }
+      } catch {
+        /* best-effort */
+      }
+    }
+  } else if (plat === 'darwin') {
+    for (const appsDir of ['/Applications', path.join(home, 'Applications')]) {
+      try {
+        if (!existsSync(appsDir)) continue
+        for (const entry of readdirSync(appsDir)) {
+          if (entry.toLowerCase().includes('freebuff') && entry.endsWith('.app')) {
+            candidates.push(path.join(appsDir, entry))
+          }
+        }
+      } catch {
+        /* best-effort */
+      }
+    }
+  } else {
+    for (const baseDir of ['/opt', path.join(home, '.local/share')]) {
+      try {
+        if (!existsSync(baseDir)) continue
+        for (const entry of readdirSync(baseDir)) {
+          if (entry.toLowerCase().includes('freebuff')) {
+            const dir = path.join(baseDir, entry)
+            try {
+              for (const f of readdirSync(dir)) {
+                if (f.toLowerCase().includes('freebuff') && !f.includes('.')) {
+                  candidates.push(path.join(dir, f))
+                }
+              }
+            } catch {
+              /* best-effort */
+            }
+          }
+        }
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+  return candidates.filter(existsSync)
+}
+
+function launchFreebuff() {
+  const found = candidateExecutablePaths()
+  if (found.length === 0) {
+    console.log(
+      '\n(Could not auto-detect the Freebuff executable to launch it for you —\n' +
+        'just open Freebuff normally from your Start Menu / Applications / launcher.)'
+    )
+    return
+  }
+  const exe = found[0]
+  console.log(`\nLaunching Freebuff: ${exe}`)
+  try {
+    if (process.platform === 'darwin') {
+      execFileSync('open', [exe], { stdio: 'ignore' })
+    } else {
+      const child = spawn(exe, [], { detached: true, stdio: 'ignore' })
+      child.unref()
+    }
+  } catch (err) {
+    console.error('Could not launch Freebuff automatically:', err.message)
+    console.log('Please open it manually.')
+  }
 }
 
 function main() {
@@ -204,7 +302,12 @@ function main() {
     cpSync(path.join(LOADER_SRC, 'mod', file), dest)
   }
   console.log(`Installed loader + mod to: ${destDir}`)
-  console.log('\nDone. (Re)start Freebuff to see RTL support applied.')
+
+  if (process.argv.includes('--launch')) {
+    launchFreebuff()
+  } else {
+    console.log('\nDone. (Re)start Freebuff to see RTL support applied.')
+  }
 }
 
 main()

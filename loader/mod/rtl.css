@@ -26,16 +26,20 @@ html[dir='rtl'] body {
 }
 
 /* Elements rtl.js tags directly (per-message, since a thread can mix
-   Persian/English messages — see "3. Per-element" below). */
+   Persian/English messages — see "3. Per-element" below).
+   !important is used deliberately here: Freebuff's own component CSS
+   (CSS modules / styled-components typically compile to fairly specific
+   selectors) would otherwise win over a plain attribute selector, which
+   is exactly the "flips back to LTR" symptom this fixes. */
 [data-freebuff-rtl='true'] {
-  direction: rtl;
-  text-align: right;
+  direction: rtl !important;
+  text-align: right !important;
   unicode-bidi: plaintext;
 }
 
 [data-freebuff-rtl='false'] {
-  direction: ltr;
-  text-align: left;
+  direction: ltr !important;
+  text-align: left !important;
 }
 
 /* ---------------------------------------------------------------------- *

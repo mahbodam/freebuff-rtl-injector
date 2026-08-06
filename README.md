@@ -58,7 +58,8 @@ cd freebuff-rtl-injector
 node scripts/patch-asar.mjs
 ```
 
-Or, even simpler — just double-click / run the helper script for your OS:
+Or, even simpler — just double-click / run the helper script for your OS,
+which patches **and opens Freebuff for you**:
 
 - **Windows** → double-click `freebuffrtl.bat`
 - **macOS / Linux** → `chmod +x freebuffrtl.sh && ./freebuffrtl.sh` (only
@@ -92,17 +93,30 @@ right-aligned with correct bidi handling, while code stays LTR.
 
 ## After every Freebuff update ⚠️
 
-**Freebuff updates very frequently**, and its auto-updater replaces
-`app.asar` completely on every update — which removes the hook (your
-`mod/` files are untouched, since they live outside the asar). **You must
-re-run the patch after each Freebuff update:**
+**Freebuff updates very frequently, and it checks for updates the instant
+it starts** — if a new version is found, it downloads and installs it
+automatically with no prompt, which replaces `app.asar` and silently
+wipes the hook. This is why RTL can "reset" every time you close and
+reopen Freebuff, even if nothing looked wrong a minute earlier.
+
+**The fix: don't open Freebuff from its own shortcut. Open it through
+this project's launcher instead** — `freebuffrtl.bat` (Windows) or
+`freebuffrtl.sh` (macOS/Linux). Both now do "patch (if needed), then
+launch Freebuff" in one step, so even if the last session's auto-update
+wiped the hook, it's silently reapplied before Freebuff opens — you never
+have to notice or do anything manually.
+
+Tip: replace the target of your Desktop/Start Menu/Dock shortcut with the
+launcher script so double-clicking your usual icon does the right thing
+automatically.
+
+If you'd rather run it by hand:
 
 ```bash
 node scripts/patch-asar.mjs
 ```
 
-or just re-run `freebuffrtl.bat` / `freebuffrtl.sh`. It's idempotent and
-safe to run as many times as you like, updated or not.
+is equally safe to run any time, updated or not — it's idempotent.
 
 ---
 
@@ -243,16 +257,29 @@ node scripts/patch-asar.mjs "/full/path/to/app.asar"
 
 ### ⚠️ بعد از هر آپدیت Freebuff
 
-**Freebuff خیلی زیاد و مکرر آپدیت می‌شه**، و هر بار کل `app.asar` رو
-عوض می‌کنه — یعنی هوک پاک می‌شه (فایل‌های `mod/` دست‌نخورده می‌مونن).
-**باید بعد از هر آپدیت دوباره پچ رو بزنی:**
+**Freebuff خیلی مکرر آپدیت می‌شه و دقیقاً همون لحظه‌ای که باز می‌شه چک
+آپدیت می‌زنه** — اگه نسخه‌ی جدیدی پیدا کنه، بدون هیچ هشداری خودش دانلود
+و نصبش می‌کنه، که یعنی `app.asar` عوض می‌شه و هوک پاک می‌شه. دقیقاً به
+همین دلیله که هر بار Freebuff رو می‌بندی و باز می‌کنی، RTL ممکنه دوباره
+از بین بره، حتی اگه یه دقیقه قبلش همه‌چیز درست بود.
+
+**راه‌حل: Freebuff رو از میان‌بر خودش باز نکن، از لانچر همین پروژه باز
+کن** — `freebuffrtl.bat` (ویندوز) یا `freebuffrtl.sh` (مک/لینوکس). این
+دو فایل حالا هم پچ می‌زنن (اگه لازم باشه) و هم خودشون Freebuff رو باز
+می‌کنن — یعنی حتی اگه آپدیت قبلی هوک رو پاک کرده باشه، قبل از باز شدن
+Freebuff خودکار دوباره پچ می‌شه و اصلاً نیازی نیست خودت متوجه بشی یا
+کاری کنی.
+
+پیشنهاد: میان‌بر روی دسکتاپ/تسک‌بار Freebuff رو به این اسکریپت لانچر
+تغییر بده، تا با همون آیکون همیشگی همه‌چیز خودکار درست انجام بشه.
+
+اگه ترجیح می‌دی دستی بزنی:
 
 ```bash
 node scripts/patch-asar.mjs
 ```
 
-یا فقط دوباره `freebuffrtl.bat` / `freebuffrtl.sh` رو اجرا کن. کاملاً
-بی‌خطره، هر چندبار هم که بزنیش مشکلی پیش نمیاد.
+هر چندبار هم بزنیش کاملاً بی‌خطره — idempotent هست.
 
 ### حذف / برگشت به حالت اول
 
@@ -356,17 +383,29 @@ node scripts/patch-asar.mjs "/full/path/to/app.asar"
 
 ### ⚠️ بعد كل تحديث لـ Freebuff
 
-**يتحدّث Freebuff بشكل متكرر جداً**، ويستبدل المحدِّث التلقائي فيه ملف
-`app.asar` بالكامل في كل مرة — مما يزيل الهوك (ملفات `mod/` تبقى كما
-هي، لأنها خارج الـ asar). **يجب إعادة تشغيل سكريبت الحقن بعد كل
-تحديث:**
+**يتحدّث Freebuff بشكل متكرر جداً، ويتحقق من وجود تحديث فور بدء
+تشغيله** — إذا وجد إصداراً جديداً، يقوم بتنزيله وتثبيته تلقائياً دون أي
+تنبيه، مما يستبدل `app.asar` ويزيل الهوك بصمت. لهذا السبب قد يعود
+اتجاه RTL "للخلف" في كل مرة تغلق فيها Freebuff وتعيد فتحه، حتى لو كان
+كل شيء يعمل بشكل صحيح قبل دقيقة.
+
+**الحل: لا تفتح Freebuff من اختصاره الخاص، بل افتحه عبر مشغّل هذا
+المشروع** — `freebuffrtl.bat` (ويندوز) أو `freebuffrtl.sh`
+(ماك/لينكس). يقوم كلاهما الآن بالحقن (إذا لزم الأمر) ثم فتح Freebuff
+في خطوة واحدة، لذا حتى لو أزال التحديث الأخير الهوك، تتم إعادة تطبيقه
+بصمت قبل فتح Freebuff — دون الحاجة لملاحظة ذلك أو فعل أي شيء يدوياً.
+
+نصيحة: غيّر اختصار سطح المكتب/قائمة ابدأ الخاص بـ Freebuff ليشير إلى
+سكريبت المشغّل هذا، حتى يعمل كل شيء تلقائياً بالنقر على نفس الأيقونة
+المعتادة.
+
+إذا كنت تفضل التشغيل يدوياً:
 
 ```bash
 node scripts/patch-asar.mjs
 ```
 
-أو فقط أعد تشغيل `freebuffrtl.bat` / `freebuffrtl.sh`. آمن تماماً مهما
-كررت تشغيله.
+آمن تماماً مهما كررت تشغيله — العملية idempotent.
 
 ### إلغاء التثبيت / الاستعادة
 

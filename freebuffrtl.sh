@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# Freebuff RTL Injector — macOS / Linux patcher
-# Run this any time after Freebuff updates:
-#   ./freebuffrtl.sh
-# (On macOS you may need: chmod +x freebuffrtl.sh   — once, the first time)
+# Freebuff RTL Injector — one-click "patch + launch"
+#
+# Freebuff checks for updates and can silently replace app.asar every time
+# it starts, which wipes the RTL hook. Use THIS script instead of opening
+# Freebuff directly: it re-patches first (instant no-op if nothing
+# changed) and then opens Freebuff for you.
+#
+# Tip: point your Dock/desktop shortcut at this script instead of
+# Freebuff's own binary so you never have to think about it again.
 
 set -e
 cd "$(dirname "$0")"
@@ -20,9 +25,5 @@ if [ ! -f "scripts/patch-asar.mjs" ]; then
   exit 1
 fi
 
-echo "Patching Freebuff for RTL support..."
-echo ""
-node scripts/patch-asar.mjs "$@"
+node scripts/patch-asar.mjs --launch "$@"
 
-echo ""
-echo "Done. (Re)start Freebuff."

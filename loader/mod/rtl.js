@@ -151,6 +151,23 @@
           seen.delete(m.target) // allow re-check since content changed
           scanTextNode(m.target)
         }
+        // React reconciliation can rewrite an element's attributes on
+        // re-render without touching its children — if it clobbers our
+        // dir="rtl"/data-freebuff-rtl in the process (e.g. re-applying its
+        // own dir="ltr" default), re-tag immediately instead of waiting
+        // for the periodic sweep below.
+        if (m.type === 'attributes' && m.target && m.target.nodeType === Node.ELEMENT_NODE) {
+          const el = m.target
+          if (m.attributeName === 'dir' || m.attributeName === 'data-freebuff-rtl') {
+            // Only fix elements WE tagged before — don't fight elements
+            // we've never touched.
+            if (el.dataset.freebuffRtlWrapped === '1' || el.hasAttribute('data-freebuff-rtl')) {
+              const text = el.textContent || ''
+              const dir = scriptDirection(text)
+              if (dir === 'rtl' && el.getAttribute('dir') !== 'rtl') tag(el, 'rtl')
+            }
+          }
+        }
       }
     })
   })
@@ -158,7 +175,17 @@
     childList: true,
     subtree: true,
     characterData: true,
+    attributes: true,
+    attributeFilter: ['dir', 'data-freebuff-rtl'],
   })
+
+  // Virtualized lists (react-window/react-virtual-style chat scrollback)
+  // mount/unmount rows as you scroll. childList+subtree above should catch
+  // every mount, but as a safety net against any timing edge case (e.g. a
+  // batch of rows swapped in a single frame before requestAnimationFrame
+  // runs), periodically re-sweep the whole document. Cheap: the `seen`
+  // WeakSet means already-tagged text nodes are skipped instantly.
+  setInterval(() => scanSubtree(document.body), 2000)
 
   // Live-flip the composer while typing, independent of the mutation
   // observer (input value changes don't always fire text-node mutations
