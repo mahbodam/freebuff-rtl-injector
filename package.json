@@ -1,0 +1,12 @@
+{
+  "name": "freebuff-rtl-injector",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone RTL (Persian/Arabic/Hebrew) support injector for Freebuff Desktop, in the style of BetterDiscord/Vencord.",
+  "type": "module",
+  "scripts": {
+    "patch": "node scripts/patch-asar.mjs",
+    "uninstall": "node scripts/uninstall.mjs"
+  },
+  "license": "MIT"
+}

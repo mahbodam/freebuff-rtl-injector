@@ -1,0 +1,113 @@
+/**
+ * Freebuff RTL Injector — rtl.css
+ *
+ * Freebuff's frontend build isn't available to inspect (it's served at
+ * runtime by a local Bun server, not shipped inside app.asar), so these
+ * rules are written to be structure-agnostic: they key off `dir="rtl"`
+ * (which rtl.js sets on <html> or on individual message bubbles) plus
+ * `:lang()` / Unicode-range-driven heuristics, NOT Freebuff's own class
+ * names. This means they keep working across Freebuff UI updates.
+ *
+ * If you want tighter, pixel-perfect RTL for a specific element later
+ * (e.g. the composer toolbar), open DevTools inside Freebuff
+ * (the app doesn't disable it), find the real class name, and add a
+ * targeted rule in the "SITE-SPECIFIC OVERRIDES" section at the bottom —
+ * that section is intentionally the only place likely to break on
+ * updates, everything above it should not need touching.
+ */
+
+/* ---------------------------------------------------------------------- *
+ * 1. Base direction
+ * ---------------------------------------------------------------------- */
+
+html[dir='rtl'],
+html[dir='rtl'] body {
+  direction: rtl;
+}
+
+/* Elements rtl.js tags directly (per-message, since a thread can mix
+   Persian/English messages — see "3. Per-element" below). */
+[data-freebuff-rtl='true'] {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+[data-freebuff-rtl='false'] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 2. Things that must NEVER flip even inside an RTL block
+ * ---------------------------------------------------------------------- */
+
+/* Code blocks, inline code, terminal/xterm panes: always LTR, always
+   left-aligned, regardless of surrounding direction. Freebuff is a coding
+   tool — this is the single most important exception in the whole file. */
+[data-freebuff-rtl='true'] pre,
+[data-freebuff-rtl='true'] code,
+[data-freebuff-rtl='true'] kbd,
+[data-freebuff-rtl='true'] samp,
+.xterm,
+.xterm-viewport,
+.xterm-screen {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate;
+}
+
+/* Numbers, file paths, and URLs inside RTL text shouldn't have their
+   digit/slash order visually reversed. isolate keeps LTR runs intact
+   without forcing the whole line LTR. */
+[data-freebuff-rtl='true'] .freebuff-rtl-ltr-run {
+  unicode-bidi: isolate;
+  direction: ltr;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 3. Per-element auto-detected direction (set by rtl.js via MutationObserver)
+ * ---------------------------------------------------------------------- */
+
+/* Chat/message-like containers: right-align RTL text but keep the
+   message row's flex order sane (avatar/timestamp shouldn't jump sides
+   just because the text is Persian). Scope is deliberately generic:
+   any element rtl.js has flagged gets this, regardless of what Freebuff
+   calls it. */
+[data-freebuff-rtl='true'] {
+  font-feature-settings: 'kern' 1;
+}
+
+/* Placeholders and inputs: when the user is actively typing Persian into
+   the composer, mirror the box so the caret starts on the right. rtl.js
+   toggles data-freebuff-rtl on the focused input based on its content. */
+textarea[data-freebuff-rtl='true'],
+input[data-freebuff-rtl='true'] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 4. Scrollbars / misc cosmetic
+ * ---------------------------------------------------------------------- */
+
+[data-freebuff-rtl='true'] {
+  /* Keep scrollbars where users expect on RTL content without forcing a
+     full RTL scrollbar-gutter flip for the whole app (that tends to look
+     broken half-mixed with Freebuff's own LTR-authored chrome). */
+  scrollbar-gutter: auto;
+}
+
+/* ---------------------------------------------------------------------- *
+ * SITE-SPECIFIC OVERRIDES
+ * Add real Freebuff class-name rules below once you've inspected the
+ * live DOM (DevTools → right-click → Inspect). Keep the generic rules
+ * above untouched so a future Freebuff update degrades gracefully
+ * instead of breaking entirely.
+ * ---------------------------------------------------------------------- */
+
+/* Example (uncomment and edit once you find the real class):
+.message-bubble[data-freebuff-rtl='true'] {
+  flex-direction: row-reverse;
+}
+*/
